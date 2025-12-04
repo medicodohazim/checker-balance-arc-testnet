@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arc Testnet - USDC Balance Checker</title>
+    <title>Arc Testnet - Multi-Token Balance Checker</title>
     
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     
     <style>
+        /* Seu CSS está ótimo, apenas adicionei um estilo para a lista de resultados */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100% ); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%  ); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 600px; width: 100%; }
         h1 { color: #667eea; margin-bottom: 10px; text-align: center; font-size: 28px; }
         .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
@@ -18,53 +19,47 @@
         input { width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; transition: border-color 0.3s; font-family: monospace; }
         input:focus { outline: none; border-color: #667eea; }
         button { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 10px; }
-        button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
-        button:active { transform: translateY(0); }
-        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-        #result { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #333; text-align: center; }
-        .info { background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 14px; color: #1976d2; }
-        .info strong { display: block; margin-bottom: 5px; }
+        #result { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; min-height: 60px; text-align: left; }
         .footer { margin-top: 30px; text-align: center; color: #999; font-size: 12px; }
-        .status { margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 12px; color: #856404; }
-        .status.success { background: #d4edda; color: #155724; }
-        .status.error { background: #f8d7da; color: #721c24; }
+        
+        /* Estilo para a lista de tokens */
+        #result ul { list-style-type: none; padding: 0; }
+        #result li { font-size: 18px; font-weight: 600; padding: 10px 0; border-bottom: 1px solid #eee; }
+        #result li:last-child { border-bottom: none; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔍 Arc Testnet USDC Checker</h1>
-        <p class="subtitle">Verifique o saldo de USDC de qualquer carteira na Arc Testnet</p>
-        <div id="ethers-status" class="status">Carregando biblioteca ethers.js...</div>
+        <h1>🔍 Arc Testnet Multi-Token Checker</h1>
+        <p class="subtitle"></p>
+
         <div class="input-group">
             <label for="address">Endereço da Carteira (0x...)</label>
-            <input type="text" id="address" placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb" value="">
+            <input type="text" id="address" placeholder="Paste your wallet address here" value="">
         </div>
-        <button onclick="checkBalance()">Verificar Saldo</button>
-        <div id="result">Insira um endereço e clique em "Verificar Saldo"</div>
-        <div class="info">
-            <strong>ℹ️ Informações:</strong>
-            Rede: Arc Testnet  
+        <button onclick="checkAllBalances()">Check All Balances</button>
+        
+        <div id="result">
+            Your wallet balances will appear here.
+        </div>
 
-            Contrato USDC: 0x3600000000000000000000000000000000000000
-        </div>
         <div class="footer">
-            Powered by x: @medicodohazim| Arc Testnet
+            Powered by x:@medicodohazim| Arc Testnet
         </div>
     </div>
 
     <script>
-        window.addEventListener('load', function() {
-            const statusDiv = document.getElementById('ethers-status');
-            if (typeof window.ethers !== 'undefined') {
-                statusDiv.textContent ="welcome 😄";
-                statusDiv.className = 'status success';
-            } else {
-                statusDiv.textContent = '❌ Erro: ethers.js não foi carregado.';
-                statusDiv.className = 'status error';
-            }
-        });
+        // A LISTA DE TOKENS QUE VAMOS VERIFICAR
+                const tokensToCheck = [
+            { name: 'USDC', address: '0x3600000000000000000000000000000000000000', decimals: 6 },
+            { name: 'WUSDC', address: '0x911b4000D3422F482F4062a913885f7b035382Df', decimals: 18 },
+            { name: 'USDT', address: '0x175CdB1D338945f0D851A741ccF787D343E57952', decimals: 18 },
+            { name: 'EURC', address: '0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a', decimals: 6 },
+            { name: 'SYN', address: '0xC5124C846c6e6307986988dFb7e743327aA05F19', decimals: 18 }        
+            // Adicione mais tokens aqui no futuro
+        ];
 
-        async function checkBalance() {
+        async function checkAllBalances() {
             if (typeof window.ethers === 'undefined') {
                 document.getElementById("result").innerText = "Erro: A biblioteca Ethers.js não foi carregada.";
                 return;
@@ -73,41 +68,58 @@
             const userAddress = document.getElementById("address").value.trim();
             const resultElement = document.getElementById("result");
 
-            if (!userAddress) {
-                resultElement.innerText = "Por favor, insira um endereço de carteira.";
+            if (!userAddress || !userAddress.startsWith('0x') || userAddress.length !== 42) {
+                resultElement.innerText = "Por favor, insira um endereço de carteira válido.";
                 return;
             }
 
-            if (!userAddress.startsWith('0x') || userAddress.length !== 42) {
-                resultElement.innerText = "Endereço inválido! Deve começar com 0x e ter 42 caracteres.";
-                return;
-            }
-
-            resultElement.innerText = "🔄 Verificando saldo...";
+            resultElement.innerHTML = "🔄 Checking balances, please wait...";
 
             try {
                 const rpcUrl = "https://rpc.testnet.arc.network/";
                 const provider = new ethers.providers.JsonRpcProvider(rpcUrl );
+                const tokenAbi = ["function balanceOf(address owner) view returns (uint256)"];
 
-                // ===================================================================
-                // AQUI ESTÁ A CORREÇÃO FINAL E CORRETA DO ENDEREÇO DO CONTRATO USDC
-                const usdcContractAddress = "0x3600000000000000000000000000000000000000";
-                // ===================================================================
+                // Array para guardar as "promessas" de verificação de saldo
+                const balancePromises = tokensToCheck.map(token => {
+                    const tokenContract = new ethers.Contract(token.address, tokenAbi, provider);
+                    return tokenContract.balanceOf(userAddress).then(balanceBigNumber => ({
+                        ...token, // Copia as informações do token (nome, endereço, decimais)
+                        balance: balanceBigNumber // Adiciona o saldo encontrado
+                    }));
+                });
 
-                const usdcAbi = ["function balanceOf(address owner) view returns (uint256)"];
-                const usdcContract = new ethers.Contract(usdcContractAddress, usdcAbi, provider);
-                const balanceBigNumber = await usdcContract.balanceOf(userAddress);
-                const balance = ethers.utils.formatUnits(balanceBigNumber, 6);
+                // Executa todas as verificações de saldo em paralelo
+                const results = await Promise.all(balancePromises);
 
-                resultElement.innerText = `💰 Saldo de USDC: ${balance}`;
+                // Filtra apenas os tokens que o usuário realmente tem (saldo > 0)
+                const tokensFound = results.filter(token => !token.balance.isZero());
+
+                if (tokensFound.length === 0) {
+                    resultElement.innerHTML = "Nenhum dos tokens verificados foi encontrado nesta carteira.";
+                    return;
+                }
+
+                // Monta o HTML para mostrar a lista de tokens encontrados
+                let htmlResult = '<ul>';
+                tokensFound.forEach(token => {
+                    const unformattedBalance = ethers.utils.formatUnits(token.balance, token.decimals);
+const formattedBalance = parseFloat(unformattedBalance).toFixed(2);
+
+                    htmlResult += `<li>💰 ${token.name}: ${formattedBalance}</li>`;
+                });
+                htmlResult += '</ul>';
+
+                resultElement.innerHTML = htmlResult;
 
             } catch (error) {
-                resultElement.innerText = "❌ Erro ao buscar o saldo. Verifique o endereço e tente novamente.";
+                resultElement.innerText = "❌ Erro ao buscar os saldos.";
                 console.error("Detalhes do erro:", error);
             }
         }
 
-        window.checkBalance = checkBalance;
+        // Expõe a função para o HTML
+        window.checkAllBalances = checkAllBalances;
     </script>
 </body>
 </html>
