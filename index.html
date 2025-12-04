@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Testnet - USDC Balance Checker</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100% ); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 600px; width: 100%; }
+        h1 { color: #667eea; margin-bottom: 10px; text-align: center; font-size: 28px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; }
+        input { width: 100%; padding: 15px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px; transition: border-color 0.3s; font-family: monospace; }
+        input:focus { outline: none; border-color: #667eea; }
+        button { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 10px; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
+        button:active { transform: translateY(0); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        #result { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #333; text-align: center; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 14px; color: #1976d2; }
+        .info strong { display: block; margin-bottom: 5px; }
+        .footer { margin-top: 30px; text-align: center; color: #999; font-size: 12px; }
+        .status { margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; font-size: 12px; color: #856404; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Arc Testnet USDC Checker</h1>
+        <p class="subtitle">Verifique o saldo de USDC de qualquer carteira na Arc Testnet</p>
+        <div id="ethers-status" class="status">Carregando biblioteca ethers.js...</div>
+        <div class="input-group">
+            <label for="address">Endereço da Carteira (0x...)</label>
+            <input type="text" id="address" placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb" value="">
+        </div>
+        <button onclick="checkBalance()">Verificar Saldo</button>
+        <div id="result">Insira um endereço e clique em "Verificar Saldo"</div>
+        <div class="info">
+            <strong>ℹ️ Informações:</strong>
+            Rede: Arc Testnet  
+
+            Contrato USDC: 0x3600000000000000000000000000000000000000
+        </div>
+        <div class="footer">
+            Powered by x: @medicodohazim| Arc Testnet
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            const statusDiv = document.getElementById('ethers-status');
+            if (typeof window.ethers !== 'undefined') {
+                statusDiv.textContent ="welcome 😄";
+                statusDiv.className = 'status success';
+            } else {
+                statusDiv.textContent = '❌ Erro: ethers.js não foi carregado.';
+                statusDiv.className = 'status error';
+            }
+        });
+
+        async function checkBalance() {
+            if (typeof window.ethers === 'undefined') {
+                document.getElementById("result").innerText = "Erro: A biblioteca Ethers.js não foi carregada.";
+                return;
+            }
+
+            const userAddress = document.getElementById("address").value.trim();
+            const resultElement = document.getElementById("result");
+
+            if (!userAddress) {
+                resultElement.innerText = "Por favor, insira um endereço de carteira.";
+                return;
+            }
+
+            if (!userAddress.startsWith('0x') || userAddress.length !== 42) {
+                resultElement.innerText = "Endereço inválido! Deve começar com 0x e ter 42 caracteres.";
+                return;
+            }
+
+            resultElement.innerText = "🔄 Verificando saldo...";
+
+            try {
+                const rpcUrl = "https://rpc.testnet.arc.network/";
+                const provider = new ethers.providers.JsonRpcProvider(rpcUrl );
+
+                // ===================================================================
+                // AQUI ESTÁ A CORREÇÃO FINAL E CORRETA DO ENDEREÇO DO CONTRATO USDC
+                const usdcContractAddress = "0x3600000000000000000000000000000000000000";
+                // ===================================================================
+
+                const usdcAbi = ["function balanceOf(address owner) view returns (uint256)"];
+                const usdcContract = new ethers.Contract(usdcContractAddress, usdcAbi, provider);
+                const balanceBigNumber = await usdcContract.balanceOf(userAddress);
+                const balance = ethers.utils.formatUnits(balanceBigNumber, 6);
+
+                resultElement.innerText = `💰 Saldo de USDC: ${balance}`;
+
+            } catch (error) {
+                resultElement.innerText = "❌ Erro ao buscar o saldo. Verifique o endereço e tente novamente.";
+                console.error("Detalhes do erro:", error);
+            }
+        }
+
+        window.checkBalance = checkBalance;
+    </script>
+</body>
+</html>
